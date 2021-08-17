@@ -1,4 +1,9 @@
-# Initalizing studies in data visualization for clustering
+"""
+TODO:   Find a way to represent the data before the clustering to compare;
+        Find a way to measure the clustering result.
+"""
+
+# Initializing studies in data visualization for clustering
 # Data handling
 import numpy as np
 import pandas as pd
@@ -16,51 +21,74 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 
-df = pd.read_csv("Pokemon.csv")
-types = df['Type 1'].isin(['Grass', 'Fire', 'Water'])
-drop_cols = ['Type 1', 'Type 2', 'Generation', 'Legendary', '#', 'Name']
-df_types_pokemon = df[types].drop(columns=drop_cols)
-
-print(df_types_pokemon.columns)
-print(df_types_pokemon)
-
-
-scores = [KMeans(n_clusters=i+2).fit(df_types_pokemon).inertia_ for i in range(10)]
-sns.lineplot(np.arange(2, 12), scores)
-plt.xlabel('Number of clusters')
-plt.ylabel("Inertia")
-plt.title("Inertia of k-Means versus number of clusters")
-plt.show()
+# loading and preprocessing tha database POKEMON
+def load_database(path_data="Pokemon.csv"):
+    df = pd.read_csv(path_data)
+    types = df['Type 1'].isin(['Grass', 'Fire', 'Water', 'Electric'])
+    labels = extract_labels(df, list(df[types]['Type 1']))
+    drop_cols = ['Type 1', 'Type 2', 'Generation', 'Legendary', '#', 'Name']
+    types_pokemon = df[types].drop(columns=drop_cols)
+    return types_pokemon, labels
 
 
+def extract_labels(data, data_classes):
+    classes = list(set(data_classes))
+    labels = np.array([])
+    for c in data_classes:
+        labels = np.append(labels, int(classes.index(c)))
+    return labels
+
+
+df_types_pokemon, labels_types_pokemon = load_database("Pokemon.csv")
+print(df_types_pokemon.head())
+
+
+# inertia is used to know how many clusters we must use to represent the data
+def inertia(data):
+    scores = [KMeans(n_clusters=i+2).fit(data).inertia_ for i in range(10)]
+    sns.lineplot(np.arange(2, 12), scores)
+    plt.xlabel('Number of clusters')
+    plt.ylabel("Inertia")
+    plt.title("Inertia of k-Means versus number of clusters")
+    plt.show()
+
+
+# In this analysis, we will choice '4' groups to describe it, according to this result.
+# This was take by the point that change of the curve is made. After this point we don't have
+# too much changes in the inertia curve.
+inertia(df_types_pokemon)
+
+# At this point, let's make our kmeans clustering to this points.
 normalized_pokemon = preprocessing.normalize(df_types_pokemon)
-kmeans = KMeans(n_clusters=3)
-kmeans.fit(normalized_pokemon)
+kmeans_result = KMeans(n_clusters=4)
+kmeans_result.fit(normalized_pokemon)
 
 
+# Now, we'll use the PCA to dimensionality reduction and represent the dataset clustered.
 def prepare_pca(n_components, data, kmeans_labels):
     names = ['x', 'y', 'z']
     matrix = PCA(n_components=n_components).fit_transform(data)
     df_matrix = pd.DataFrame(matrix)
     df_matrix.rename({i: names[i] for i in range(n_components)}, axis=1, inplace=True)
     df_matrix['labels'] = kmeans_labels
-
     return df_matrix
 
 
-pca_df = prepare_pca(3, df_types_pokemon, kmeans.labels_)
-sns.scatterplot(x=pca_df.x, y=pca_df.y, hue=pca_df.labels, palette="Set2")
-plt.show()
+def plot_2d(data, labels):
+    pca_df = prepare_pca(3, data, labels)
+    sns.scatterplot(x=pca_df.x, y=pca_df.y, hue=pca_df.labels, palette="Set1")
+    plt.show()
 
 
-def plot_3d(data, name='labels'):
-    fig = px.scatter_3d(data, x='x', y='y', z='z',
-                        color=name, opacity=0.5)
-
+def plot_3d(data, labels, name='labels'):
+    pca_df = prepare_pca(3, data, labels)
+    fig = px.scatter_3d(pca_df, x='x', y='y', z='z', color=name, opacity=1, symbol=name)
     fig.update_traces(marker=dict(size=3))
     fig.show()
 
 
-pca_df = prepare_pca(3, df_types_pokemon, kmeans.labels_)
-plot_3d(pca_df)
-plt.show()
+plot_2d(df_types_pokemon, kmeans_result.labels_)
+plot_2d(df_types_pokemon, labels_types_pokemon)
+
+plot_3d(df_types_pokemon, kmeans_result.labels_)
+plot_3d(df_types_pokemon, labels_types_pokemon)
