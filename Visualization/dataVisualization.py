@@ -1,8 +1,3 @@
-"""
-TODO:   Find a way to represent the data before the clustering to compare;
-        Find a way to measure the clustering result.
-"""
-
 # Initializing studies in data visualization for clustering
 # Data handling
 import numpy as np
@@ -40,6 +35,7 @@ def extract_labels(data_classes):
 
 
 df_types_pokemon, labels_types_pokemon = load_database("Pokemon.csv")
+df_types_pokemon = df_types_pokemon[["HP", "Attack", "Defense"]]
 print(df_types_pokemon.head())
 
 
