@@ -25,13 +25,13 @@ from sklearn.decomposition import PCA
 def load_database(path_data="Pokemon.csv"):
     df = pd.read_csv(path_data)
     types = df['Type 1'].isin(['Grass', 'Fire', 'Water', 'Electric'])
-    labels = extract_labels(df, list(df[types]['Type 1']))
+    labels = extract_labels(list(df[types]['Type 1']))
     drop_cols = ['Type 1', 'Type 2', 'Generation', 'Legendary', '#', 'Name']
     types_pokemon = df[types].drop(columns=drop_cols)
     return types_pokemon, labels
 
 
-def extract_labels(data, data_classes):
+def extract_labels(data_classes):
     classes = list(set(data_classes))
     labels = np.array([])
     for c in data_classes:
@@ -53,12 +53,12 @@ def inertia(data):
     plt.show()
 
 
-# In this analysis, we will choice '4' groups to describe it, according to this result.
+# In this analysis, we will choice '4' groups to describe it, according to the result of inertia.
 # This was take by the point that change of the curve is made. After this point we don't have
 # too much changes in the inertia curve.
 inertia(df_types_pokemon)
 
-# At this point, let's make our kmeans clustering to this points.
+# At this point, let's make our k-means clustering in the database choosing 'n_clusters=4'.
 normalized_pokemon = preprocessing.normalize(df_types_pokemon)
 kmeans_result = KMeans(n_clusters=4)
 kmeans_result.fit(normalized_pokemon)
